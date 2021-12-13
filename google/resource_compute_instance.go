@@ -45,6 +45,8 @@ var (
 		"scheduling.0.preemptible",
 		"scheduling.0.node_affinities",
 		"scheduling.0.min_node_cpus",
+		"scheduling.0.maintenance_interval",
+		"scheduling.0.maintenance_freeze_duration",
 	}
 
 	shieldedInstanceConfigKeys = []string{
