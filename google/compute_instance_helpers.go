@@ -470,6 +470,14 @@ func schedulingHasChangeWithoutReboot(d *schema.ResourceData) bool {
 	if oScheduling["min_node_cpus"] != newScheduling["min_node_cpus"] {
 		return true
 	}
+	
+	if oScheduling["maintenance_interval"] != newScheduling["maintenance_interval"] {
+		return true
+	}
+	
+	if oScheduling["maintenance_freeze_duration"] != newScheduling["maintenance_freeze_duration"] {
+		return true
+	}
 
 	return false
 }
