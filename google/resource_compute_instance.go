@@ -604,12 +604,14 @@ func resourceComputeInstance() *schema.Resource {
 							Optional:     true,
 							AtLeastOneOf: schedulingKeys,
 						},
+						
 						"maintenance_interval": {
 							Type:         schema.TypeString,
 							Optional:     true,
 							AtLeastOneOf: schedulingKeys,
 							Description:  `The maintenance_interval=PERIODIC flag specifies that the VM has a periodic maintenance interval - this means the VM will see significantly fewer maintenance events (at most once every 28d), and get notified of planned maintenance events a week in advance.`,
 						},
+						
 						"maintenance_freeze_duration": {
 							Type:         schema.TypeInt,
 							Optional:     true,
