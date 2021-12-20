@@ -4522,6 +4522,7 @@ resource "google_compute_instance" "foobar" {
 
   scheduling {
     automatic_restart = false
+    maintenance_interval = PERIODIC
   }
 }
 `, instance)
@@ -4551,7 +4552,8 @@ resource "google_compute_instance" "foobar" {
 
   scheduling {
     automatic_restart = false
-    preemptible       = true
+    maintenance_interval = PERIODIC
+    maintenance_freeze_duration = 1
   }
 }
 `, instance)
