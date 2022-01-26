@@ -16,12 +16,11 @@
 subcategory: "RecaptchaEnterprise"
 layout: "google"
 page_title: "Google: google_recaptcha_enterprise_key"
-sidebar_current: "docs-google-recaptcha-enterprise-key"
 description: |-
 The RecaptchaEnterprise Key resource
 ---
 
-# google\_recaptcha\_enterprise\_key
+# google_recaptcha_enterprise_key
 
 The RecaptchaEnterprise Key resource
 
@@ -250,9 +249,9 @@ In addition to the arguments listed above, the following computed attributes are
 This resource provides the following
 [Timeouts](/docs/configuration/resources.html#timeouts) configuration options:
 
-- `create` - Default is 10 minutes.
-- `update` - Default is 10 minutes.
-- `delete` - Default is 10 minutes.
+- `create` - Default is 20 minutes.
+- `update` - Default is 20 minutes.
+- `delete` - Default is 20 minutes.
 
 ## Import
 

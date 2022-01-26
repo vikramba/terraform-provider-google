@@ -16,12 +16,11 @@
 subcategory: "AssuredWorkloads"
 layout: "google"
 page_title: "Google: google_assured_workloads_workload"
-sidebar_current: "docs-google-assured-workloads-workload"
 description: |-
 The AssuredWorkloads Workload resource
 ---
 
-# google\_assured\_workloads\_workload
+# google_assured_workloads_workload
 
 The AssuredWorkloads Workload resource
 
@@ -149,9 +148,9 @@ In addition to the arguments listed above, the following computed attributes are
 This resource provides the following
 [Timeouts](/docs/configuration/resources.html#timeouts) configuration options:
 
-- `create` - Default is 10 minutes.
-- `update` - Default is 10 minutes.
-- `delete` - Default is 10 minutes.
+- `create` - Default is 20 minutes.
+- `update` - Default is 20 minutes.
+- `delete` - Default is 20 minutes.
 
 ## Import
 

@@ -21,7 +21,6 @@ import (
 	"log"
 	"reflect"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -88,10 +87,10 @@ func resourceComputeFirewallSourceFieldsCustomizeDiff(_ context.Context, diff *s
 		_, sasOk := diff.GetOk("source_service_accounts")
 
 		_, tagsExist := diff.GetOkExists("source_tags")
-		// ranges is computed, but this is what we're trying to avoid, so we're not going to check this
+		_, rangesExist := diff.GetOkExists("source_ranges")
 		_, sasExist := diff.GetOkExists("source_service_accounts")
 
-		if !tagsOk && !rangesOk && !sasOk && !tagsExist && !sasExist {
+		if !tagsOk && !rangesOk && !sasOk && !tagsExist && !rangesExist && !sasExist {
 			return fmt.Errorf("one of source_tags, source_ranges, or source_service_accounts must be defined")
 		}
 	}
@@ -147,9 +146,9 @@ func resourceComputeFirewall() *schema.Resource {
 		},
 
 		Timeouts: &schema.ResourceTimeout{
-			Create: schema.DefaultTimeout(4 * time.Minute),
-			Update: schema.DefaultTimeout(4 * time.Minute),
-			Delete: schema.DefaultTimeout(4 * time.Minute),
+			Create: schema.DefaultTimeout(20 * time.Minute),
+			Update: schema.DefaultTimeout(20 * time.Minute),
+			Delete: schema.DefaultTimeout(20 * time.Minute),
 		},
 
 		SchemaVersion: 1,
@@ -222,7 +221,7 @@ must be expressed in CIDR format. Only IPv4 is supported.`,
 				Computed:     true,
 				Optional:     true,
 				ForceNew:     true,
-				ValidateFunc: validation.StringInSlice([]string{"INGRESS", "EGRESS", ""}, false),
+				ValidateFunc: validateEnum([]string{"INGRESS", "EGRESS", ""}),
 				Description: `Direction of traffic to which this firewall applies; default is
 INGRESS. Note: For INGRESS traffic, it is NOT supported to specify
 destinationRanges; For EGRESS traffic, it is NOT supported to specify
@@ -249,7 +248,7 @@ If defined, logging is enabled, and logs will be exported to Cloud Logging.`,
 						"metadata": {
 							Type:         schema.TypeString,
 							Required:     true,
-							ValidateFunc: validation.StringInSlice([]string{"EXCLUDE_ALL_METADATA", "INCLUDE_ALL_METADATA"}, false),
+							ValidateFunc: validateEnum([]string{"EXCLUDE_ALL_METADATA", "INCLUDE_ALL_METADATA"}),
 							Description:  `This field denotes whether to include or exclude metadata for firewall logs. Possible values: ["EXCLUDE_ALL_METADATA", "INCLUDE_ALL_METADATA"]`,
 						},
 					},
@@ -278,7 +277,8 @@ sourceTags may be set. If both properties are set, the firewall will
 apply to traffic that has source IP address within sourceRanges OR the
 source IP that belongs to a tag listed in the sourceTags property. The
 connection does not need to match both properties for the firewall to
-apply. Only IPv4 is supported.`,
+apply. Only IPv4 is supported. For INGRESS traffic, one of 'source_ranges',
+'source_tags' or 'source_service_accounts' is required.`,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
@@ -298,7 +298,8 @@ apply to traffic that has source IP address within sourceRanges OR the
 source IP belongs to an instance with service account listed in
 sourceServiceAccount. The connection does not need to match both
 properties for the firewall to apply. sourceServiceAccounts cannot be
-used at the same time as sourceTags or targetTags.`,
+used at the same time as sourceTags or targetTags. For INGRESS traffic,
+one of 'source_ranges', 'source_tags' or 'source_service_accounts' is required.`,
 				MaxItems: 10,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
@@ -317,7 +318,8 @@ address. One or both of sourceRanges and sourceTags may be set. If
 both properties are set, the firewall will apply to traffic that has
 source IP address within sourceRanges OR the source IP that belongs to
 a tag listed in the sourceTags property. The connection does not need
-to match both properties for the firewall to apply.`,
+to match both properties for the firewall to apply. For INGRESS traffic,
+one of 'source_ranges', 'source_tags' or 'source_service_accounts' is required.`,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
@@ -975,7 +977,7 @@ func flattenComputeFirewallNetwork(v interface{}, d *schema.ResourceData, config
 func flattenComputeFirewallPriority(v interface{}, d *schema.ResourceData, config *Config) interface{} {
 	// Handles the string fixed64 format
 	if strVal, ok := v.(string); ok {
-		if intVal, err := strconv.ParseInt(strVal, 10, 64); err == nil {
+		if intVal, err := stringToFixed64(strVal); err == nil {
 			return intVal
 		}
 	}

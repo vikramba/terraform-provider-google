@@ -16,12 +16,11 @@
 subcategory: "ContainerAzure"
 layout: "google"
 page_title: "Google: google_container_azure_node_pool"
-sidebar_current: "docs-google-container-azure-node-pool"
 description: |-
 An Anthos node pool running on Azure.
 ---
 
-# google\_container\_azure\_node\_pool
+# google_container_azure_node_pool
 
 An Anthos node pool running on Azure.
 
@@ -252,9 +251,9 @@ In addition to the arguments listed above, the following computed attributes are
 This resource provides the following
 [Timeouts](/docs/configuration/resources.html#timeouts) configuration options:
 
-- `create` - Default is 10 minutes.
-- `update` - Default is 10 minutes.
-- `delete` - Default is 10 minutes.
+- `create` - Default is 20 minutes.
+- `update` - Default is 20 minutes.
+- `delete` - Default is 20 minutes.
 
 ## Import
 

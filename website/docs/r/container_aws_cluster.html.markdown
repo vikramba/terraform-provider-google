@@ -16,12 +16,11 @@
 subcategory: "ContainerAws"
 layout: "google"
 page_title: "Google: google_container_aws_cluster"
-sidebar_current: "docs-google-container-aws-cluster"
 description: |-
 An Anthos cluster running on AWS.
 ---
 
-# google\_container\_aws\_cluster
+# google_container_aws_cluster
 
 An Anthos cluster running on AWS.
 
@@ -365,9 +364,9 @@ In addition to the arguments listed above, the following computed attributes are
 This resource provides the following
 [Timeouts](/docs/configuration/resources.html#timeouts) configuration options:
 
-- `create` - Default is 10 minutes.
-- `update` - Default is 10 minutes.
-- `delete` - Default is 10 minutes.
+- `create` - Default is 20 minutes.
+- `update` - Default is 20 minutes.
+- `delete` - Default is 20 minutes.
 
 ## Import
 

@@ -27,6 +27,7 @@ import (
 	containerazure "github.com/GoogleCloudPlatform/declarative-resource-client-library/services/google/containerazure"
 	dataproc "github.com/GoogleCloudPlatform/declarative-resource-client-library/services/google/dataproc"
 	eventarc "github.com/GoogleCloudPlatform/declarative-resource-client-library/services/google/eventarc"
+	networkconnectivity "github.com/GoogleCloudPlatform/declarative-resource-client-library/services/google/networkconnectivity"
 	orgpolicy "github.com/GoogleCloudPlatform/declarative-resource-client-library/services/google/orgpolicy"
 	osconfig "github.com/GoogleCloudPlatform/declarative-resource-client-library/services/google/osconfig"
 	privateca "github.com/GoogleCloudPlatform/declarative-resource-client-library/services/google/privateca"
@@ -56,7 +57,7 @@ func NewDCLAssuredWorkloadsClient(config *Config, userAgent, billingProject stri
 	return assuredworkloads.NewClient(dclConfig)
 }
 
-func NewDCLcloudbuildClient(config *Config, userAgent, billingProject string, timeout time.Duration) *cloudbuild.Client {
+func NewDCLCloudbuildClient(config *Config, userAgent, billingProject string, timeout time.Duration) *cloudbuild.Client {
 	configOptions := []dcl.ConfigOption{
 		dcl.WithHTTPClient(config.client),
 		dcl.WithUserAgent(userAgent),
@@ -217,6 +218,29 @@ func NewDCLEventarcClient(config *Config, userAgent, billingProject string, time
 	return eventarc.NewClient(dclConfig)
 }
 
+func NewDCLNetworkConnectivityClient(config *Config, userAgent, billingProject string, timeout time.Duration) *networkconnectivity.Client {
+	configOptions := []dcl.ConfigOption{
+		dcl.WithHTTPClient(config.client),
+		dcl.WithUserAgent(userAgent),
+		dcl.WithLogger(dclLogger{}),
+		dcl.WithBasePath(config.NetworkConnectivityBasePath),
+	}
+
+	if timeout != 0 {
+		configOptions = append(configOptions, dcl.WithTimeout(timeout))
+	}
+
+	if config.UserProjectOverride {
+		configOptions = append(configOptions, dcl.WithUserProjectOverride())
+		if billingProject != "" {
+			configOptions = append(configOptions, dcl.WithBillingProject(billingProject))
+		}
+	}
+
+	dclConfig := dcl.NewConfig(configOptions...)
+	return networkconnectivity.NewClient(dclConfig)
+}
+
 func NewDCLOrgPolicyClient(config *Config, userAgent, billingProject string, timeout time.Duration) *orgpolicy.Client {
 	configOptions := []dcl.ConfigOption{
 		dcl.WithHTTPClient(config.client),
@@ -240,7 +264,7 @@ func NewDCLOrgPolicyClient(config *Config, userAgent, billingProject string, tim
 	return orgpolicy.NewClient(dclConfig)
 }
 
-func NewDCLOSConfigClient(config *Config, userAgent, billingProject string, timeout time.Duration) *osconfig.Client {
+func NewDCLOsConfigClient(config *Config, userAgent, billingProject string, timeout time.Duration) *osconfig.Client {
 	configOptions := []dcl.ConfigOption{
 		dcl.WithHTTPClient(config.client),
 		dcl.WithUserAgent(userAgent),

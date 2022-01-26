@@ -94,7 +94,6 @@ resource "google_privateca_certificate" "default" {
     }
     x509_config {
       ca_options {
-        non_ca = true
         is_ca = false
       }
       key_usage {
@@ -156,8 +155,8 @@ resource "google_privateca_certificate_template" "template" {
     aia_ocsp_servers = ["string"]
 
     ca_options {
-      is_ca                          = false
-      max_issuer_path_length         = 6
+      is_ca                  = false
+      max_issuer_path_length = 6
     }
 
     key_usage {
@@ -353,7 +352,6 @@ resource "google_privateca_certificate" "default" {
     }
     x509_config {
       ca_options {
-        non_ca = true
         is_ca = false
       }
       key_usage {
@@ -969,8 +967,8 @@ In addition to the arguments listed above, the following computed attributes are
 This resource provides the following
 [Timeouts](/docs/configuration/resources.html#timeouts) configuration options:
 
-- `create` - Default is 4 minutes.
-- `delete` - Default is 4 minutes.
+- `create` - Default is 20 minutes.
+- `delete` - Default is 20 minutes.
 
 ## Import
 

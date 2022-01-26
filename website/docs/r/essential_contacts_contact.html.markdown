@@ -27,7 +27,7 @@ A contact that will receive notifications from Google Cloud.
 
 To get more information about Contact, see:
 
-* [API documentation](https://cloud.google.com/resource-manager/docs/reference/essentialcontacts/rest/v1beta1/projects.contacts)
+* [API documentation](https://cloud.google.com/resource-manager/docs/reference/essentialcontacts/rest/v1/projects.contacts)
 * How-to Guides
     * [Official Documentation](https://cloud.google.com/resource-manager/docs/managing-notification-contacts)
 
@@ -98,9 +98,9 @@ In addition to the arguments listed above, the following computed attributes are
 This resource provides the following
 [Timeouts](/docs/configuration/resources.html#timeouts) configuration options:
 
-- `create` - Default is 4 minutes.
-- `update` - Default is 4 minutes.
-- `delete` - Default is 4 minutes.
+- `create` - Default is 20 minutes.
+- `update` - Default is 20 minutes.
+- `delete` - Default is 20 minutes.
 
 ## Import
 
