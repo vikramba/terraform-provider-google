@@ -71,7 +71,8 @@ func resourceEventarcTrigger() *schema.Resource {
 			"name": {
 				Type:        schema.TypeString,
 				Required:    true,
-				Description: "Required. The resource name of the trigger. Must be unique within the location on the project and must be in `projects/{project}/locations/{location}/triggers/{trigger}` format.",
+				ForceNew:    true,
+				Description: "Required. The resource name of the trigger. Must be unique within the location on the project.",
 			},
 
 			"labels": {
@@ -94,7 +95,7 @@ func resourceEventarcTrigger() *schema.Resource {
 				Type:             schema.TypeString,
 				Optional:         true,
 				DiffSuppressFunc: compareSelfLinkOrResourceName,
-				Description:      "Optional. The IAM service account email associated with the trigger. The service account represents the identity of the trigger. The principal who calls this API must have `iam.serviceAccounts.actAs` permission in the service account. See https://cloud.google.com/iam/docs/understanding-service-accounts?hl=en#sa_common for more information. For Cloud Run destinations, this service account is used to generate identity tokens when invoking the service. See https://cloud.google.com/run/docs/triggering/pubsub-push#create-service-account for information on how to invoke authenticated Cloud Run services. In order to create Audit Log triggers, the service account should also have `roles/eventarc.eventReceiver` IAM role.",
+				Description:      "Optional. The IAM service account email associated with the trigger. The service account represents the identity of the trigger. The principal who calls this API must have `iam.serviceAccounts.actAs` permission in the service account. See https://cloud.google.com/iam/docs/understanding-service-accounts#sa_common for more information. For Cloud Run destinations, this service account is used to generate identity tokens when invoking the service. See https://cloud.google.com/run/docs/triggering/pubsub-push#create-service-account for information on how to invoke authenticated Cloud Run services. In order to create Audit Log triggers, the service account should also have `roles/eventarc.eventReceiver` IAM role.",
 			},
 
 			"transport": {
@@ -141,7 +142,7 @@ func EventarcTriggerDestinationSchema() *schema.Resource {
 				Type:             schema.TypeString,
 				Optional:         true,
 				DiffSuppressFunc: compareSelfLinkOrResourceName,
-				Description:      "The Cloud Function resource name. Only Cloud Functions V2 is supported. Format: projects/{project}/locations/{location}/functions/{function}",
+				Description:      "[WARNING] Configuring a Cloud Function in Trigger is not supported as of today. The Cloud Function resource name. Format: projects/{project}/locations/{location}/functions/{function}",
 			},
 
 			"cloud_run_service": {
@@ -218,10 +219,11 @@ func EventarcTriggerTransportPubsubSchema() *schema.Resource {
 	return &schema.Resource{
 		Schema: map[string]*schema.Schema{
 			"topic": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				ForceNew:    true,
-				Description: "Optional. The name of the Pub/Sub topic created and managed by Eventarc system as a transport for the event delivery. Format: `projects/{PROJECT_ID}/topics/{TOPIC_NAME You may set an existing topic for triggers of the type google.cloud.pubsub.topic.v1.messagePublished` only. The topic you provide here will not be deleted by Eventarc at trigger deletion.",
+				Type:             schema.TypeString,
+				Optional:         true,
+				ForceNew:         true,
+				DiffSuppressFunc: compareSelfLinkOrResourceName,
+				Description:      "Optional. The name of the Pub/Sub topic created and managed by Eventarc system as a transport for the event delivery. Format: `projects/{PROJECT_ID}/topics/{TOPIC_NAME}. You may set an existing topic for triggers of the type google.cloud.pubsub.topic.v1.messagePublished` only. The topic you provide here will not be deleted by Eventarc at trigger deletion.",
 			},
 
 			"subscription": {
@@ -462,6 +464,7 @@ func resourceEventarcTriggerDelete(d *schema.ResourceData, meta interface{}) err
 
 func resourceEventarcTriggerImport(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
 	config := meta.(*Config)
+
 	if err := parseImportId([]string{
 		"projects/(?P<project>[^/]+)/locations/(?P<location>[^/]+)/triggers/(?P<name>[^/]+)",
 		"(?P<project>[^/]+)/(?P<location>[^/]+)/(?P<name>[^/]+)",
@@ -485,7 +488,7 @@ func expandEventarcTriggerDestination(o interface{}) *eventarc.TriggerDestinatio
 		return eventarc.EmptyTriggerDestination
 	}
 	objArr := o.([]interface{})
-	if len(objArr) == 0 {
+	if len(objArr) == 0 || objArr[0] == nil {
 		return eventarc.EmptyTriggerDestination
 	}
 	obj := objArr[0].(map[string]interface{})
@@ -513,7 +516,7 @@ func expandEventarcTriggerDestinationCloudRunService(o interface{}) *eventarc.Tr
 		return eventarc.EmptyTriggerDestinationCloudRunService
 	}
 	objArr := o.([]interface{})
-	if len(objArr) == 0 {
+	if len(objArr) == 0 || objArr[0] == nil {
 		return eventarc.EmptyTriggerDestinationCloudRunService
 	}
 	obj := objArr[0].(map[string]interface{})
@@ -545,7 +548,7 @@ func expandEventarcTriggerMatchingCriteriaArray(o interface{}) []eventarc.Trigge
 	o = o.(*schema.Set).List()
 
 	objs := o.([]interface{})
-	if len(objs) == 0 {
+	if len(objs) == 0 || objs[0] == nil {
 		return make([]eventarc.TriggerMatchingCriteria, 0)
 	}
 
@@ -602,7 +605,7 @@ func expandEventarcTriggerTransport(o interface{}) *eventarc.TriggerTransport {
 		return nil
 	}
 	objArr := o.([]interface{})
-	if len(objArr) == 0 {
+	if len(objArr) == 0 || objArr[0] == nil {
 		return nil
 	}
 	obj := objArr[0].(map[string]interface{})
@@ -628,7 +631,7 @@ func expandEventarcTriggerTransportPubsub(o interface{}) *eventarc.TriggerTransp
 		return eventarc.EmptyTriggerTransportPubsub
 	}
 	objArr := o.([]interface{})
-	if len(objArr) == 0 {
+	if len(objArr) == 0 || objArr[0] == nil {
 		return eventarc.EmptyTriggerTransportPubsub
 	}
 	obj := objArr[0].(map[string]interface{})

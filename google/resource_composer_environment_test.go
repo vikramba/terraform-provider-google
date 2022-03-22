@@ -35,11 +35,15 @@ func TestComposerImageVersionDiffSuppress(t *testing.T) {
 		expected bool
 	}{
 		{"matches", "composer-1.4.0-airflow-1.10.0", "composer-1.4.0-airflow-1.10.0", true},
+		{"preview matches", "composer-1.17.0-preview.0-airflow-2.0.1", "composer-1.17.0-preview.0-airflow-2.0.1", true},
 		{"old latest", "composer-latest-airflow-1.10.0", "composer-1.4.1-airflow-1.10.0", true},
 		{"new latest", "composer-1.4.1-airflow-1.10.0", "composer-latest-airflow-1.10.0", true},
-		{"airflow equivalent", "composer-1.4.0-airflow-1.10.0", "composer-1.4.0-airflow-1.10", true},
-		{"airflow different", "composer-1.4.0-airflow-1.10.0", "composer-1.4-airflow-1.9.0", false},
-		{"preview matches", "composer-1.17.0-preview.0-airflow-2.0.1", "composer-1.17.0-preview.0-airflow-2.0.1", true},
+		{"composer alias equivalent", "composer-1.4.0-airflow-1.10.0", "composer-1-airflow-1.10", true},
+		{"composer alias different", "composer-1.4.0-airflow-2.1.4", "composer-2-airflow-2.2", false},
+		{"composer different", "composer-1.4.0-airflow-1.10.0", "composer-1.4.1-airflow-1.10.0", false},
+		{"airflow alias equivalent", "composer-1.4.0-airflow-1.10.0", "composer-1.4.0-airflow-1.10", true},
+		{"airflow alias different", "composer-1.4.0-airflow-2.1.4", "composer-1.4.0-airflow-2.2", false},
+		{"airflow different", "composer-1.4.0-airflow-1.10.0", "composer-1.4.0-airflow-1.9.0", false},
 	}
 
 	for _, tc := range cases {
@@ -325,6 +329,75 @@ func TestAccComposerEnvironment_withEncryptionConfig(t *testing.T) {
 	})
 }
 
+func TestAccComposerEnvironment_withMaintenanceWindow(t *testing.T) {
+	t.Parallel()
+
+	envName := fmt.Sprintf("%s-%d", testComposerEnvironmentPrefix, randInt(t))
+	network := fmt.Sprintf("%s-%d", testComposerNetworkPrefix, randInt(t))
+	subnetwork := network + "-1"
+
+	vcrTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccComposerEnvironmentDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccComposerEnvironment_maintenanceWindow(envName, network, subnetwork),
+			},
+			{
+				ResourceName:      "google_composer_environment.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			// This is a terrible clean-up step in order to get destroy to succeed,
+			// due to dangling firewall rules left by the Composer Environment blocking network deletion.
+			// TODO(dzarmola): Remove this check if firewall rules bug gets fixed by Composer.
+			{
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+				Config:             testAccComposerEnvironment_maintenanceWindow(envName, network, subnetwork),
+				Check:              testAccCheckClearComposerEnvironmentFirewalls(t, network),
+			},
+		},
+	})
+}
+
+func TestAccComposerEnvironment_maintenanceWindowUpdate(t *testing.T) {
+	t.Parallel()
+
+	envName := fmt.Sprintf("%s-%d", testComposerEnvironmentPrefix, randInt(t))
+	network := fmt.Sprintf("%s-%d", testComposerNetworkPrefix, randInt(t))
+	subnetwork := network + "-1"
+
+	vcrTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccComposerEnvironmentDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccComposerEnvironment_maintenanceWindow(envName, network, subnetwork),
+			},
+			{
+				Config: testAccComposerEnvironment_maintenanceWindowUpdate(envName, network, subnetwork),
+			},
+			{
+				ResourceName:      "google_composer_environment.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			// This is a terrible clean-up step in order to get destroy to succeed,
+			// due to dangling firewall rules left by the Composer Environment blocking network deletion.
+			// TODO: Remove this check if firewall rules bug gets fixed by Composer.
+			{
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+				Config:             testAccComposerEnvironment_maintenanceWindowUpdate(envName, network, subnetwork),
+				Check:              testAccCheckClearComposerEnvironmentFirewalls(t, network),
+			},
+		},
+	})
+}
+
 func TestAccComposerEnvironment_ComposerV2(t *testing.T) {
 	t.Parallel()
 
@@ -388,6 +461,38 @@ func TestAccComposerEnvironment_UpdateComposerV2(t *testing.T) {
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: false,
 				Config:             testAccComposerEnvironment_updateComposerV2(envName, network, subnetwork),
+				Check:              testAccCheckClearComposerEnvironmentFirewalls(t, network),
+			},
+		},
+	})
+}
+
+func TestAccComposerEnvironment_composerV2PrivateServiceConnect(t *testing.T) {
+	t.Parallel()
+
+	envName := fmt.Sprintf("%s-%d", testComposerEnvironmentPrefix, randInt(t))
+	network := fmt.Sprintf("%s-%d", testComposerNetworkPrefix, randInt(t))
+	subnetwork := network + "-1"
+	vcrTest(t, resource.TestCase{
+		PreCheck:     func() { testAccPreCheck(t) },
+		Providers:    testAccProviders,
+		CheckDestroy: testAccComposerEnvironmentDestroyProducer(t),
+		Steps: []resource.TestStep{
+			{
+				Config: testAccComposerEnvironment_composerV2PrivateServiceConnect(envName, network, subnetwork),
+			},
+			{
+				ResourceName:      "google_composer_environment.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+			// This is a terrible clean-up step in order to get destroy to succeed,
+			// due to dangling firewall rules left by the Composer Environment blocking network deletion.
+			// TODO(dzarmola): Remove this check if firewall rules bug gets fixed by Composer.
+			{
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+				Config:             testAccComposerEnvironment_composerV2PrivateServiceConnect(envName, network, subnetwork),
 				Check:              testAccCheckClearComposerEnvironmentFirewalls(t, network),
 			},
 		},
@@ -934,6 +1039,64 @@ resource "google_compute_subnetwork" "test" {
 `, pid, kmsKey, name, kmsKey, network, subnetwork)
 }
 
+func testAccComposerEnvironment_maintenanceWindow(envName, network, subnetwork string) string {
+	return fmt.Sprintf(`
+resource "google_composer_environment" "test" {
+	name   = "%s"
+	region = "us-central1"
+	config {
+		maintenance_window {
+			start_time = "2019-08-01T01:00:00Z"
+			end_time = "2019-08-01T07:00:00Z"
+			recurrence = "FREQ=WEEKLY;BYDAY=TU,WE"
+		}
+	}
+}
+
+resource "google_compute_network" "test" {
+	name                    = "%s"
+	auto_create_subnetworks = false
+}
+
+resource "google_compute_subnetwork" "test" {
+	name          = "%s"
+	ip_cidr_range = "10.2.0.0/16"
+	region        = "us-central1"
+	network       = google_compute_network.test.self_link
+}
+
+`, envName, network, subnetwork)
+}
+
+func testAccComposerEnvironment_maintenanceWindowUpdate(envName, network, subnetwork string) string {
+	return fmt.Sprintf(`
+resource "google_composer_environment" "test" {
+	name   = "%s"
+	region = "us-central1"
+	config {
+		maintenance_window {
+			start_time = "2019-08-01T01:00:00Z"
+			end_time = "2019-08-01T07:00:00Z"
+			recurrence = "FREQ=DAILY"
+		}
+	}
+}
+
+resource "google_compute_network" "test" {
+	name                    = "%s"
+	auto_create_subnetworks = false
+}
+
+resource "google_compute_subnetwork" "test" {
+	name          = "%s"
+	ip_cidr_range = "10.2.0.0/16"
+	region        = "us-central1"
+	network       = google_compute_network.test.self_link
+}
+
+`, envName, network, subnetwork)
+}
+
 func testAccComposerEnvironment_composerV2(envName, network, subnetwork string) string {
 	return fmt.Sprintf(`
 data "google_composer_image_versions" "all" {
@@ -1002,6 +1165,53 @@ resource "google_compute_subnetwork" "test" {
 	name          = "%s"
 	ip_cidr_range = "10.2.0.0/16"
 	region        = "us-east1"
+ 	network       = google_compute_network.test.self_link
+	private_ip_google_access = true
+}
+
+`, envName, network, subnetwork)
+}
+
+func testAccComposerEnvironment_composerV2PrivateServiceConnect(envName, network, subnetwork string) string {
+	return fmt.Sprintf(`
+data "google_composer_image_versions" "all" {
+}
+
+locals {
+	composer_version = "2"  # both composer_version and airflow_version are parts of regex, so if either 1 or 2 version is ok "[12]" should be used,
+	airflow_version = "2"   # if sub-version is needed remember to escape "." with "\\." for example 1.2 should be written as "1\\.2"
+	reg_ex = join("", ["composer-", local.composer_version, "\\.[\\d+\\.]*\\d+.*-airflow-", local.airflow_version, "\\.[\\d+\\.]*\\d+"])
+	matching_images = [for v in data.google_composer_image_versions.all.image_versions[*].image_version_id: v if length(regexall(local.reg_ex, v)) > 0]
+}
+resource "google_composer_environment" "test" {
+	name   = "%s"
+	region = "us-central1"
+
+		config {
+			node_config {
+      	network    			= google_compute_network.test.self_link
+      	subnetwork 			= google_compute_subnetwork.test.self_link
+    	}
+
+  		software_config {
+  		  image_version = local.matching_images[0]
+  		}
+  		private_environment_config {
+				cloud_composer_connection_subnetwork		= google_compute_subnetwork.test.self_link
+  		}
+  	}
+
+}
+
+resource "google_compute_network" "test" {
+	name                    = "%s"
+	auto_create_subnetworks = false
+}
+
+resource "google_compute_subnetwork" "test" {
+	name          = "%s"
+	ip_cidr_range = "10.2.0.0/16"
+	region        = "us-central1"
  	network       = google_compute_network.test.self_link
 	private_ip_google_access = true
 }

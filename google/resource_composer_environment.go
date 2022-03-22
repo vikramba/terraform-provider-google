@@ -17,7 +17,7 @@ import (
 const (
 	composerEnvironmentEnvVariablesRegexp          = "[a-zA-Z_][a-zA-Z0-9_]*."
 	composerEnvironmentReservedAirflowEnvVarRegexp = "AIRFLOW__[A-Z0-9_]+__[A-Z0-9_]+"
-	composerEnvironmentVersionRegexp               = `composer-([0-9]+\.[0-9]+\.[0-9]+(-preview\.[0-9]+)?|latest)-airflow-([0-9]+\.[0-9]+(\.[0-9]+.*)?)`
+	composerEnvironmentVersionRegexp               = `composer-(([0-9]+)(\.[0-9]+\.[0-9]+(-preview\.[0-9]+)?)?|latest)-airflow-(([0-9]+\.[0-9]+)(\.[0-9]+)?)`
 )
 
 var composerEnvironmentReservedEnvVar = map[string]struct{}{
@@ -55,6 +55,7 @@ var (
 		"config.0.database_config",
 		"config.0.web_server_config",
 		"config.0.encryption_config",
+		"config.0.maintenance_window",
 		"config.0.workloads_config",
 		"config.0.environment_size",
 	}
@@ -65,6 +66,7 @@ var (
 		"config.0.private_environment_config.0.cloud_sql_ipv4_cidr_block",
 		"config.0.private_environment_config.0.web_server_ipv4_cidr_block",
 		"config.0.private_environment_config.0.cloud_composer_network_ipv4_cidr_block",
+		"config.0.private_environment_config.0.cloud_composer_connection_subnetwork",
 	}
 
 	composerIpAllocationPolicyKeys = []string{
@@ -119,6 +121,7 @@ func resourceComposerEnvironment() *schema.Resource {
 			},
 			"region": {
 				Type:        schema.TypeString,
+				Computed:    true,
 				Optional:    true,
 				ForceNew:    true,
 				Description: `The location or Compute Engine region for the environment.`,
@@ -310,16 +313,17 @@ func resourceComposerEnvironment() *schema.Resource {
 										AtLeastOneOf: composerSoftwareConfigKeys,
 										Elem:         &schema.Schema{Type: schema.TypeString},
 										ValidateFunc: validateComposerEnvironmentEnvVariables,
-										Description:  `Additional environment variables to provide to the Apache Airflow schedulerf, worker, and webserver processes. Environment variable names must match the regular expression [a-zA-Z_][a-zA-Z0-9_]*. They cannot specify Apache Airflow software configuration overrides (they cannot match the regular expression AIRFLOW__[A-Z0-9_]+__[A-Z0-9_]+), and they cannot match any of the following reserved names: AIRFLOW_HOME C_FORCE_ROOT CONTAINER_NAME DAGS_FOLDER GCP_PROJECT GCS_BUCKET GKE_CLUSTER_NAME SQL_DATABASE SQL_INSTANCE SQL_PASSWORD SQL_PROJECT SQL_REGION SQL_USER.`,
+										Description:  `Additional environment variables to provide to the Apache Airflow scheduler, worker, and webserver processes. Environment variable names must match the regular expression [a-zA-Z_][a-zA-Z0-9_]*. They cannot specify Apache Airflow software configuration overrides (they cannot match the regular expression AIRFLOW__[A-Z0-9_]+__[A-Z0-9_]+), and they cannot match any of the following reserved names: AIRFLOW_HOME C_FORCE_ROOT CONTAINER_NAME DAGS_FOLDER GCP_PROJECT GCS_BUCKET GKE_CLUSTER_NAME SQL_DATABASE SQL_INSTANCE SQL_PASSWORD SQL_PROJECT SQL_REGION SQL_USER.`,
 									},
 									"image_version": {
 										Type:             schema.TypeString,
 										Computed:         true,
 										Optional:         true,
+										ForceNew:         true,
 										AtLeastOneOf:     composerSoftwareConfigKeys,
 										ValidateFunc:     validateRegexp(composerEnvironmentVersionRegexp),
 										DiffSuppressFunc: composerImageVersionDiffSuppress,
-										Description:      `The version of the software running in the environment. This encapsulates both the version of Cloud Composer functionality and the version of Apache Airflow. It must match the regular expression composer-[0-9]+\.[0-9]+(\.[0-9]+)?-airflow-[0-9]+\.[0-9]+(\.[0-9]+.*)?. The Cloud Composer portion of the version is a semantic version. The portion of the image version following 'airflow-' is an official Apache Airflow repository release name. See documentation for allowed release names.`,
+										Description:      `The version of the software running in the environment. This encapsulates both the version of Cloud Composer functionality and the version of Apache Airflow. It must match the regular expression composer-([0-9]+(\.[0-9]+\.[0-9]+(-preview\.[0-9]+)?)?|latest)-airflow-([0-9]+\.[0-9]+(\.[0-9]+)?). The Cloud Composer portion of the image version is a full semantic version, or an alias in the form of major version number or 'latest'. The Apache Airflow portion of the image version is a full semantic version that points to one of the supported Apache Airflow versions, or an alias in the form of only major and minor versions specified. See documentation for more details and version list.`,
 									},
 									"python_version": {
 										Type:         schema.TypeString,
@@ -388,6 +392,14 @@ func resourceComposerEnvironment() *schema.Resource {
 										AtLeastOneOf: composerPrivateEnvironmentConfig,
 										ForceNew:     true,
 										Description:  `The CIDR block from which IP range for Cloud Composer Network in tenant project will be reserved. Needs to be disjoint from private_cluster_config.master_ipv4_cidr_block and cloud_sql_ipv4_cidr_block. This field is supported for Cloud Composer environments in versions composer-2.*.*-airflow-*.*.* and newer.`,
+									},
+									"cloud_composer_connection_subnetwork": {
+										Type:         schema.TypeString,
+										Optional:     true,
+										Computed:     true,
+										AtLeastOneOf: composerPrivateEnvironmentConfig,
+										ForceNew:     true,
+										Description:  `When specified, the environment will use Private Service Connect instead of VPC peerings to connect to Cloud SQL in the Tenant Project, and the PSC endpoint in the Customer Project will use an IP address from this subnetwork. This field is supported for Cloud Composer environments in versions composer-2.*.*-airflow-*.*.* and newer.`,
 									},
 								},
 							},
@@ -463,7 +475,36 @@ func resourceComposerEnvironment() *schema.Resource {
 								},
 							},
 						},
-
+						"maintenance_window": {
+							Type:         schema.TypeList,
+							Optional:     true,
+							Computed:     true,
+							AtLeastOneOf: composerConfigKeys,
+							MaxItems:     1,
+							Description:  `The configuration for Cloud Composer maintenance window.`,
+							Elem: &schema.Resource{
+								Schema: map[string]*schema.Schema{
+									"start_time": {
+										Type:        schema.TypeString,
+										Required:    true,
+										ForceNew:    false,
+										Description: `Start time of the first recurrence of the maintenance window.`,
+									},
+									"end_time": {
+										Type:        schema.TypeString,
+										Required:    true,
+										ForceNew:    false,
+										Description: `Maintenance window end time. It is used only to calculate the duration of the maintenance window. The value for end-time must be in the future, relative to 'start_time'.`,
+									},
+									"recurrence": {
+										Type:        schema.TypeString,
+										Required:    true,
+										ForceNew:    false,
+										Description: `Maintenance window recurrence. Format is a subset of RFC-5545 (https://tools.ietf.org/html/rfc5545) 'RRULE'. The only allowed values for 'FREQ' field are 'FREQ=DAILY' and 'FREQ=WEEKLY;BYDAY=...'. Example values: 'FREQ=WEEKLY;BYDAY=TU,WE', 'FREQ=DAILY'.`,
+									},
+								},
+							},
+						},
 						"workloads_config": {
 							Type:         schema.TypeList,
 							Optional:     true,
@@ -753,21 +794,6 @@ func resourceComposerEnvironmentUpdate(d *schema.ResourceData, meta interface{})
 			return err
 		}
 
-		if d.HasChange("config.0.software_config.0.image_version") {
-			patchObj := &composer.Environment{
-				Config: &composer.EnvironmentConfig{
-					SoftwareConfig: &composer.SoftwareConfig{},
-				},
-			}
-			if config != nil && config.SoftwareConfig != nil {
-				patchObj.Config.SoftwareConfig.ImageVersion = config.SoftwareConfig.ImageVersion
-			}
-			err = resourceComposerEnvironmentPatchField("config.softwareConfig.imageVersion", userAgent, patchObj, d, tfConfig)
-			if err != nil {
-				return err
-			}
-		}
-
 		if d.HasChange("config.0.software_config.0.airflow_config_overrides") {
 			patchObj := &composer.Environment{
 				Config: &composer.EnvironmentConfig{
@@ -864,6 +890,17 @@ func resourceComposerEnvironmentUpdate(d *schema.ResourceData, meta interface{})
 				patchObj.Config.WebServerConfig = config.WebServerConfig
 			}
 			err = resourceComposerEnvironmentPatchField("config.webServerConfig.machineType", userAgent, patchObj, d, tfConfig)
+			if err != nil {
+				return err
+			}
+		}
+
+		if d.HasChange("config.0.maintenance_window") {
+			patchObj := &composer.Environment{Config: &composer.EnvironmentConfig{}}
+			if config != nil {
+				patchObj.Config.MaintenanceWindow = config.MaintenanceWindow
+			}
+			err = resourceComposerEnvironmentPatchField("config.maintenanceWindow", userAgent, patchObj, d, tfConfig)
 			if err != nil {
 				return err
 			}
@@ -1011,6 +1048,7 @@ func flattenComposerEnvironmentConfig(envCfg *composer.EnvironmentConfig) interf
 	transformed["database_config"] = flattenComposerEnvironmentConfigDatabaseConfig(envCfg.DatabaseConfig)
 	transformed["web_server_config"] = flattenComposerEnvironmentConfigWebServerConfig(envCfg.WebServerConfig)
 	transformed["encryption_config"] = flattenComposerEnvironmentConfigEncryptionConfig(envCfg.EncryptionConfig)
+	transformed["maintenance_window"] = flattenComposerEnvironmentConfigMaintenanceWindow(envCfg.MaintenanceWindow)
 	transformed["workloads_config"] = flattenComposerEnvironmentConfigWorkloadsConfig(envCfg.WorkloadsConfig)
 	transformed["environment_size"] = envCfg.EnvironmentSize
 	return []interface{}{transformed}
@@ -1066,6 +1104,19 @@ func flattenComposerEnvironmentConfigEncryptionConfig(encryptionCfg *composer.En
 
 	transformed := make(map[string]interface{})
 	transformed["kms_key_name"] = encryptionCfg.KmsKeyName
+
+	return []interface{}{transformed}
+}
+
+func flattenComposerEnvironmentConfigMaintenanceWindow(maintenanceWindow *composer.MaintenanceWindow) interface{} {
+	if maintenanceWindow == nil {
+		return nil
+	}
+
+	transformed := make(map[string]interface{})
+	transformed["start_time"] = maintenanceWindow.StartTime
+	transformed["end_time"] = maintenanceWindow.EndTime
+	transformed["recurrence"] = maintenanceWindow.Recurrence
 
 	return []interface{}{transformed}
 }
@@ -1129,6 +1180,7 @@ func flattenComposerEnvironmentConfigPrivateEnvironmentConfig(envCfg *composer.P
 	transformed["cloud_sql_ipv4_cidr_block"] = envCfg.CloudSqlIpv4CidrBlock
 	transformed["web_server_ipv4_cidr_block"] = envCfg.WebServerIpv4CidrBlock
 	transformed["cloud_composer_network_ipv4_cidr_block"] = envCfg.CloudComposerNetworkIpv4CidrBlock
+	transformed["cloud_composer_connection_subnetwork"] = envCfg.CloudComposerConnectionSubnetwork
 
 	return []interface{}{transformed}
 }
@@ -1250,6 +1302,11 @@ func expandComposerEnvironmentConfig(v interface{}, d *schema.ResourceData, conf
 	}
 	transformed.EncryptionConfig = transformedEncryptionConfig
 
+	transformedMaintenanceWindow, err := expandComposerEnvironmentConfigMaintenanceWindow(original["maintenance_window"], d, config)
+	if err != nil {
+		return nil, err
+	}
+	transformed.MaintenanceWindow = transformedMaintenanceWindow
 	transformedWorkloadsConfig, err := expandComposerEnvironmentConfigWorkloadsConfig(original["workloads_config"], d, config)
 	if err != nil {
 		return nil, err
@@ -1342,6 +1399,30 @@ func expandComposerEnvironmentConfigEncryptionConfig(v interface{}, d *schema.Re
 	return transformed, nil
 }
 
+func expandComposerEnvironmentConfigMaintenanceWindow(v interface{}, d *schema.ResourceData, config *Config) (*composer.MaintenanceWindow, error) {
+	l := v.([]interface{})
+	if len(l) == 0 {
+		return nil, nil
+	}
+	raw := l[0]
+	original := raw.(map[string]interface{})
+	transformed := &composer.MaintenanceWindow{}
+
+	if v, ok := original["start_time"]; ok {
+		transformed.StartTime = v.(string)
+	}
+
+	if v, ok := original["end_time"]; ok {
+		transformed.EndTime = v.(string)
+	}
+
+	if v, ok := original["recurrence"]; ok {
+		transformed.Recurrence = v.(string)
+	}
+
+	return transformed, nil
+}
+
 func expandComposerEnvironmentConfigWorkloadsConfig(v interface{}, d *schema.ResourceData, config *Config) (*composer.WorkloadsConfig, error) {
 	l := v.([]interface{})
 	if len(l) == 0 {
@@ -1428,6 +1509,9 @@ func expandComposerEnvironmentConfigPrivateEnvironmentConfig(v interface{}, d *s
 
 	if v, ok := original["cloud_composer_network_ipv4_cidr_block"]; ok {
 		transformed.CloudComposerNetworkIpv4CidrBlock = v.(string)
+	}
+	if v, ok := original["cloud_composer_connection_subnetwork"]; ok {
+		transformed.CloudComposerConnectionSubnetwork = v.(string)
 	}
 
 	transformed.PrivateClusterConfig = subBlock
@@ -1805,48 +1889,75 @@ func composerImageVersionDiffSuppress(_, old, new string, _ *schema.ResourceData
 	versionRe := regexp.MustCompile(composerEnvironmentVersionRegexp)
 	oldVersions := versionRe.FindStringSubmatch(old)
 	newVersions := versionRe.FindStringSubmatch(new)
-	if oldVersions == nil || len(oldVersions) < 4 {
+	if oldVersions == nil || len(oldVersions) < 8 {
 		// Somehow one of the versions didn't match the regexp or didn't
 		// have values in the capturing groups. In that case, fall back to
 		// an equality check.
 		if old != "" {
-			log.Printf("[WARN] Composer version didn't match regexp: %s", old)
+			log.Printf("[WARN] Image version didn't match regexp: %s", old)
 		}
 		return old == new
 	}
-	if newVersions == nil || len(newVersions) < 3 {
+	if newVersions == nil || len(newVersions) < 8 {
 		// Somehow one of the versions didn't match the regexp or didn't
 		// have values in the capturing groups. In that case, fall back to
 		// an equality check.
 		if new != "" {
-			log.Printf("[WARN] Composer version didn't match regexp: %s", new)
+			log.Printf("[WARN] Image version didn't match regexp: %s", new)
 		}
 		return old == new
 	}
 
-	// Check airflow version using the version package to account for
-	// diffs like 1.10 and 1.10.0
-	eq, err := versionsEqual(oldVersions[3], newVersions[3])
-	if err != nil {
-		log.Printf("[WARN] Could not parse airflow version, %s", err)
-	}
-	if !eq {
-		return false
+	oldAirflow := oldVersions[5]
+	oldAirflowMajorMinor := oldVersions[6]
+	newAirflow := newVersions[5]
+	newAirflowMajorMinor := newVersions[6]
+	// Check Airflow versions.
+	if oldAirflow == oldAirflowMajorMinor || newAirflow == newAirflowMajorMinor {
+		// If one of the Airflow versions specifies only major and minor version
+		// (like 1.10), we can only compare major and minor versions.
+		eq, err := versionsEqual(oldAirflowMajorMinor, newAirflowMajorMinor)
+		if err != nil {
+			log.Printf("[WARN] Could not parse airflow version, %s", err)
+		}
+		if !eq {
+			return false
+		}
+	} else {
+		// Otherwise, we compare the full Airflow versions (like 1.10.15).
+		eq, err := versionsEqual(oldAirflow, newAirflow)
+		if err != nil {
+			log.Printf("[WARN] Could not parse airflow version, %s", err)
+		}
+		if !eq {
+			return false
+		}
 	}
 
-	// Check composer version. Assume that "latest" means we should
-	// suppress the diff, because we don't have any other way of
-	// knowing what the latest version actually is.
-	if oldVersions[1] == "latest" || newVersions[1] == "latest" {
+	oldComposer := oldVersions[1]
+	oldComposerMajor := oldVersions[2]
+	newComposer := newVersions[1]
+	newComposerMajor := newVersions[2]
+	// Check Composer versions.
+	if oldComposer == "latest" || newComposer == "latest" {
+		// We don't know what the latest version is so we suppress the diff.
 		return true
+	} else if oldComposer == oldComposerMajor || newComposer == newComposerMajor {
+		// If one of the Composer versions specifies only major version
+		// (like 1), we can only compare major versions.
+		eq, err := versionsEqual(oldComposerMajor, newComposerMajor)
+		if err != nil {
+			log.Printf("[WARN] Could not parse composer version, %s", err)
+		}
+		return eq
+	} else {
+		// Otherwise, we compare the full Composer versions (like 1.18.1).
+		eq, err := versionsEqual(oldComposer, newComposer)
+		if err != nil {
+			log.Printf("[WARN] Could not parse composer version, %s", err)
+		}
+		return eq
 	}
-	// If neither version is "latest", check them using the version
-	// package like we did for airflow.
-	eq, err = versionsEqual(oldVersions[1], newVersions[1])
-	if err != nil {
-		log.Printf("[WARN] Could not parse composer version, %s", err)
-	}
-	return eq
 }
 
 func versionsEqual(old, new string) (bool, error) {

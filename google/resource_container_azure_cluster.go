@@ -48,7 +48,6 @@ func resourceContainerAzureCluster() *schema.Resource {
 			"authorization": {
 				Type:        schema.TypeList,
 				Required:    true,
-				ForceNew:    true,
 				Description: "Required. Configuration related to the cluster RBAC settings.",
 				MaxItems:    1,
 				Elem:        ContainerAzureClusterAuthorizationSchema(),
@@ -196,7 +195,6 @@ func ContainerAzureClusterAuthorizationSchema() *schema.Resource {
 			"admin_users": {
 				Type:        schema.TypeList,
 				Required:    true,
-				ForceNew:    true,
 				Description: "Required. Users that can perform operations as a cluster admin. A new ClusterRoleBinding will be created to grant the cluster-admin ClusterRole to the users. At most one user can be specified. For more info on RBAC, see https://kubernetes.io/docs/reference/access-authn-authz/rbac/#user-facing-roles",
 				Elem:        ContainerAzureClusterAuthorizationAdminUsersSchema(),
 			},
@@ -210,7 +208,6 @@ func ContainerAzureClusterAuthorizationAdminUsersSchema() *schema.Resource {
 			"username": {
 				Type:        schema.TypeString,
 				Required:    true,
-				ForceNew:    true,
 				Description: "Required. The name of the user, e.g. `my-gcp-id@gmail.com`.",
 			},
 		},
@@ -300,7 +297,6 @@ func ContainerAzureClusterControlPlaneSchema() *schema.Resource {
 				Type:        schema.TypeString,
 				Computed:    true,
 				Optional:    true,
-				ForceNew:    true,
 				Description: "Optional. The Azure VM size name. Example: `Standard_DS2_v2`. For available VM sizes, see https://docs.microsoft.com/en-us/azure/virtual-machines/vm-naming-conventions. When unspecified, it defaults to `Standard_DS2_v2`.",
 			},
 		},
@@ -744,6 +740,7 @@ func resourceContainerAzureClusterDelete(d *schema.ResourceData, meta interface{
 
 func resourceContainerAzureClusterImport(d *schema.ResourceData, meta interface{}) ([]*schema.ResourceData, error) {
 	config := meta.(*Config)
+
 	if err := parseImportId([]string{
 		"projects/(?P<project>[^/]+)/locations/(?P<location>[^/]+)/azureClusters/(?P<name>[^/]+)",
 		"(?P<project>[^/]+)/(?P<location>[^/]+)/(?P<name>[^/]+)",
@@ -767,7 +764,7 @@ func expandContainerAzureClusterAuthorization(o interface{}) *containerazure.Clu
 		return containerazure.EmptyClusterAuthorization
 	}
 	objArr := o.([]interface{})
-	if len(objArr) == 0 {
+	if len(objArr) == 0 || objArr[0] == nil {
 		return containerazure.EmptyClusterAuthorization
 	}
 	obj := objArr[0].(map[string]interface{})
@@ -793,7 +790,7 @@ func expandContainerAzureClusterAuthorizationAdminUsersArray(o interface{}) []co
 	}
 
 	objs := o.([]interface{})
-	if len(objs) == 0 {
+	if len(objs) == 0 || objs[0] == nil {
 		return make([]containerazure.ClusterAuthorizationAdminUsers, 0)
 	}
 
@@ -848,7 +845,7 @@ func expandContainerAzureClusterControlPlane(o interface{}) *containerazure.Clus
 		return containerazure.EmptyClusterControlPlane
 	}
 	objArr := o.([]interface{})
-	if len(objArr) == 0 {
+	if len(objArr) == 0 || objArr[0] == nil {
 		return containerazure.EmptyClusterControlPlane
 	}
 	obj := objArr[0].(map[string]interface{})
@@ -892,7 +889,7 @@ func expandContainerAzureClusterControlPlaneSshConfig(o interface{}) *containera
 		return containerazure.EmptyClusterControlPlaneSshConfig
 	}
 	objArr := o.([]interface{})
-	if len(objArr) == 0 {
+	if len(objArr) == 0 || objArr[0] == nil {
 		return containerazure.EmptyClusterControlPlaneSshConfig
 	}
 	obj := objArr[0].(map[string]interface{})
@@ -918,7 +915,7 @@ func expandContainerAzureClusterControlPlaneDatabaseEncryption(o interface{}) *c
 		return containerazure.EmptyClusterControlPlaneDatabaseEncryption
 	}
 	objArr := o.([]interface{})
-	if len(objArr) == 0 {
+	if len(objArr) == 0 || objArr[0] == nil {
 		return containerazure.EmptyClusterControlPlaneDatabaseEncryption
 	}
 	obj := objArr[0].(map[string]interface{})
@@ -944,7 +941,7 @@ func expandContainerAzureClusterControlPlaneMainVolume(o interface{}) *container
 		return nil
 	}
 	objArr := o.([]interface{})
-	if len(objArr) == 0 {
+	if len(objArr) == 0 || objArr[0] == nil {
 		return nil
 	}
 	obj := objArr[0].(map[string]interface{})
@@ -970,7 +967,7 @@ func expandContainerAzureClusterControlPlaneProxyConfig(o interface{}) *containe
 		return containerazure.EmptyClusterControlPlaneProxyConfig
 	}
 	objArr := o.([]interface{})
-	if len(objArr) == 0 {
+	if len(objArr) == 0 || objArr[0] == nil {
 		return containerazure.EmptyClusterControlPlaneProxyConfig
 	}
 	obj := objArr[0].(map[string]interface{})
@@ -998,7 +995,7 @@ func expandContainerAzureClusterControlPlaneReplicaPlacementsArray(o interface{}
 	}
 
 	objs := o.([]interface{})
-	if len(objs) == 0 {
+	if len(objs) == 0 || objs[0] == nil {
 		return make([]containerazure.ClusterControlPlaneReplicaPlacements, 0)
 	}
 
@@ -1055,7 +1052,7 @@ func expandContainerAzureClusterControlPlaneRootVolume(o interface{}) *container
 		return nil
 	}
 	objArr := o.([]interface{})
-	if len(objArr) == 0 {
+	if len(objArr) == 0 || objArr[0] == nil {
 		return nil
 	}
 	obj := objArr[0].(map[string]interface{})
@@ -1081,7 +1078,7 @@ func expandContainerAzureClusterFleet(o interface{}) *containerazure.ClusterFlee
 		return containerazure.EmptyClusterFleet
 	}
 	objArr := o.([]interface{})
-	if len(objArr) == 0 {
+	if len(objArr) == 0 || objArr[0] == nil {
 		return containerazure.EmptyClusterFleet
 	}
 	obj := objArr[0].(map[string]interface{})
@@ -1108,7 +1105,7 @@ func expandContainerAzureClusterNetworking(o interface{}) *containerazure.Cluste
 		return containerazure.EmptyClusterNetworking
 	}
 	objArr := o.([]interface{})
-	if len(objArr) == 0 {
+	if len(objArr) == 0 || objArr[0] == nil {
 		return containerazure.EmptyClusterNetworking
 	}
 	obj := objArr[0].(map[string]interface{})

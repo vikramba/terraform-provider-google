@@ -17,7 +17,7 @@ subcategory: "Eventarc"
 layout: "google"
 page_title: "Google: google_eventarc_trigger"
 description: |-
-The Eventarc Trigger resource
+  The Eventarc Trigger resource
 ---
 
 # google_eventarc_trigger
@@ -92,7 +92,7 @@ The following arguments are supported:
   
 * `name` -
   (Required)
-  Required. The resource name of the trigger. Must be unique within the location on the project and must be in `projects/{project}/locations/{location}/triggers/{trigger}` format.
+  Required. The resource name of the trigger. Must be unique within the location on the project.
   
 
 
@@ -100,7 +100,7 @@ The `destination` block supports:
     
 * `cloud_function` -
   (Optional)
-  The Cloud Function resource name. Only Cloud Functions V2 is supported. Format: projects/{project}/locations/{location}/functions/{function}
+  [WARNING] Configuring a Cloud Function in Trigger is not supported as of today. The Cloud Function resource name. Format: projects/{project}/locations/{location}/functions/{function}
     
 * `cloud_run_service` -
   (Optional)
@@ -128,7 +128,7 @@ The `matching_criteria` block supports:
   
 * `service_account` -
   (Optional)
-  Optional. The IAM service account email associated with the trigger. The service account represents the identity of the trigger. The principal who calls this API must have `iam.serviceAccounts.actAs` permission in the service account. See https://cloud.google.com/iam/docs/understanding-service-accounts?hl=en#sa_common for more information. For Cloud Run destinations, this service account is used to generate identity tokens when invoking the service. See https://cloud.google.com/run/docs/triggering/pubsub-push#create-service-account for information on how to invoke authenticated Cloud Run services. In order to create Audit Log triggers, the service account should also have `roles/eventarc.eventReceiver` IAM role.
+  Optional. The IAM service account email associated with the trigger. The service account represents the identity of the trigger. The principal who calls this API must have `iam.serviceAccounts.actAs` permission in the service account. See https://cloud.google.com/iam/docs/understanding-service-accounts#sa_common for more information. For Cloud Run destinations, this service account is used to generate identity tokens when invoking the service. See https://cloud.google.com/run/docs/triggering/pubsub-push#create-service-account for information on how to invoke authenticated Cloud Run services. In order to create Audit Log triggers, the service account should also have `roles/eventarc.eventReceiver` IAM role.
   
 * `transport` -
   (Optional)
@@ -163,7 +163,7 @@ The `pubsub` block supports:
     
 * `topic` -
   (Optional)
-  Optional. The name of the Pub/Sub topic created and managed by Eventarc system as a transport for the event delivery. Format: `projects/{PROJECT_ID}/topics/{TOPIC_NAME You may set an existing topic for triggers of the type google.cloud.pubsub.topic.v1.messagePublished` only. The topic you provide here will not be deleted by Eventarc at trigger deletion.
+  Optional. The name of the Pub/Sub topic created and managed by Eventarc system as a transport for the event delivery. Format: `projects/{PROJECT_ID}/topics/{TOPIC_NAME}. You may set an existing topic for triggers of the type google.cloud.pubsub.topic.v1.messagePublished` only. The topic you provide here will not be deleted by Eventarc at trigger deletion.
     
 ## Attributes Reference
 

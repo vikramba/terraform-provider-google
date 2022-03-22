@@ -325,6 +325,14 @@ func Provider() *schema.Provider {
 					"GOOGLE_DATA_CATALOG_CUSTOM_ENDPOINT",
 				}, DefaultBasePaths[DataCatalogBasePathKey]),
 			},
+			"data_fusion_custom_endpoint": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validateCustomEndpoint,
+				DefaultFunc: schema.MultiEnvDefaultFunc([]string{
+					"GOOGLE_DATA_FUSION_CUSTOM_ENDPOINT",
+				}, DefaultBasePaths[DataFusionBasePathKey]),
+			},
 			"data_loss_prevention_custom_endpoint": {
 				Type:         schema.TypeString,
 				Optional:     true,
@@ -687,6 +695,7 @@ func Provider() *schema.Provider {
 			AssuredWorkloadsEndpointEntryKey:             AssuredWorkloadsEndpointEntry,
 			CloudResourceManagerEndpointEntryKey:         CloudResourceManagerEndpointEntry,
 			EventarcEndpointEntryKey:                     EventarcEndpointEntry,
+			FirebaserulesEndpointEntryKey:                FirebaserulesEndpointEntry,
 			GkeHubFeatureCustomEndpointEntryKey:          GkeHubFeatureCustomEndpointEntry,
 			NetworkConnectivityEndpointEntryKey:          NetworkConnectivityEndpointEntry,
 			OrgPolicyEndpointEntryKey:                    OrgPolicyEndpointEntry,
@@ -694,6 +703,7 @@ func Provider() *schema.Provider {
 			RecaptchaEnterpriseEndpointEntryKey:          RecaptchaEnterpriseEndpointEntry,
 			ContainerAwsCustomEndpointEntryKey:           ContainerAwsCustomEndpointEntry,
 			ContainerAzureCustomEndpointEntryKey:         ContainerAzureCustomEndpointEntry,
+			ApikeysEndpointEntryKey:                      ApikeysEndpointEntry,
 
 			CloudBuildWorkerPoolEndpointEntryKey: CloudBuildWorkerPoolEndpointEntry,
 		},
@@ -756,6 +766,7 @@ func Provider() *schema.Provider {
 			"google_container_registry_repository":                dataSourceGoogleContainerRepo(),
 			"google_dns_keys":                                     dataSourceDNSKeys(),
 			"google_dns_managed_zone":                             dataSourceDnsManagedZone(),
+			"google_dns_record_set":                               dataSourceDnsRecordSet(),
 			"google_game_services_game_server_deployment_rollout": dataSourceGameServicesGameServerDeploymentRollout(),
 			"google_iam_policy":                                   dataSourceGoogleIamPolicy(),
 			"google_iam_role":                                     dataSourceGoogleIamRole(),
@@ -777,6 +788,7 @@ func Provider() *schema.Provider {
 			"google_monitoring_uptime_check_ips":                  dataSourceGoogleMonitoringUptimeCheckIps(),
 			"google_netblock_ip_ranges":                           dataSourceGoogleNetblockIpRanges(),
 			"google_organization":                                 dataSourceGoogleOrganization(),
+			"google_privateca_certificate_authority":              dataSourcePrivatecaCertificateAuthority(),
 			"google_project":                                      dataSourceGoogleProject(),
 			"google_projects":                                     dataSourceGoogleProjects(),
 			"google_project_organization_policy":                  dataSourceGoogleProjectOrganizationPolicy(),
@@ -813,9 +825,9 @@ func Provider() *schema.Provider {
 	return provider
 }
 
-// Generated resources: 215
-// Generated IAM resources: 93
-// Total generated resources: 308
+// Generated resources: 217
+// Generated IAM resources: 99
+// Total generated resources: 316
 func ResourceMap() map[string]*schema.Resource {
 	resourceMap, _ := ResourceMapWithErrors()
 	return resourceMap
@@ -846,6 +858,7 @@ func ResourceMapWithErrors() (map[string]*schema.Resource, error) {
 			"google_apigee_envgroup":                                       resourceApigeeEnvgroup(),
 			"google_apigee_instance_attachment":                            resourceApigeeInstanceAttachment(),
 			"google_apigee_envgroup_attachment":                            resourceApigeeEnvgroupAttachment(),
+			"google_apigee_endpoint_attachment":                            resourceApigeeEndpointAttachment(),
 			"google_app_engine_domain_mapping":                             resourceAppEngineDomainMapping(),
 			"google_app_engine_firewall_rule":                              resourceAppEngineFirewallRule(),
 			"google_app_engine_standard_app_version":                       resourceAppEngineStandardAppVersion(),
@@ -976,6 +989,7 @@ func ResourceMapWithErrors() (map[string]*schema.Resource, error) {
 			"google_data_catalog_tag_template_iam_member":                  ResourceIamMember(DataCatalogTagTemplateIamSchema, DataCatalogTagTemplateIamUpdaterProducer, DataCatalogTagTemplateIdParseFunc),
 			"google_data_catalog_tag_template_iam_policy":                  ResourceIamPolicy(DataCatalogTagTemplateIamSchema, DataCatalogTagTemplateIamUpdaterProducer, DataCatalogTagTemplateIdParseFunc),
 			"google_data_catalog_tag":                                      resourceDataCatalogTag(),
+			"google_data_fusion_instance":                                  resourceDataFusionInstance(),
 			"google_data_loss_prevention_job_trigger":                      resourceDataLossPreventionJobTrigger(),
 			"google_data_loss_prevention_inspect_template":                 resourceDataLossPreventionInspectTemplate(),
 			"google_data_loss_prevention_stored_info_type":                 resourceDataLossPreventionStoredInfoType(),
@@ -1136,6 +1150,7 @@ func ResourceMapWithErrors() (map[string]*schema.Resource, error) {
 		map[string]*schema.Resource{
 			"google_app_engine_application":                resourceAppEngineApplication(),
 			"google_bigquery_table":                        resourceBigQueryTable(),
+			"google_bigquery_reservation_assignment":       resourceBigqueryReservationAssignment(),
 			"google_bigtable_gc_policy":                    resourceBigtableGCPolicy(),
 			"google_bigtable_instance":                     resourceBigtableInstance(),
 			"google_bigtable_table":                        resourceBigtableTable(),
@@ -1206,24 +1221,28 @@ func ResourceMapWithErrors() (map[string]*schema.Resource, error) {
 		},
 		// resources implemented within tpgtools
 		map[string]*schema.Resource{
+			"google_apikeys_key":                         resourceApikeysKey(),
 			"google_assured_workloads_workload":          resourceAssuredWorkloadsWorkload(),
 			"google_cloudbuild_worker_pool":              resourceCloudbuildWorkerPool(),
 			"google_compute_firewall_policy_association": resourceComputeFirewallPolicyAssociation(),
 			"google_compute_firewall_policy":             resourceComputeFirewallPolicy(),
 			"google_compute_firewall_policy_rule":        resourceComputeFirewallPolicyRule(),
+			"google_container_aws_cluster":               resourceContainerAwsCluster(),
+			"google_container_aws_node_pool":             resourceContainerAwsNodePool(),
+			"google_container_azure_client":              resourceContainerAzureClient(),
+			"google_container_azure_cluster":             resourceContainerAzureCluster(),
+			"google_container_azure_node_pool":           resourceContainerAzureNodePool(),
 			"google_dataproc_workflow_template":          resourceDataprocWorkflowTemplate(),
 			"google_eventarc_trigger":                    resourceEventarcTrigger(),
+			"google_firebaserules_release":               resourceFirebaserulesRelease(),
+			"google_firebaserules_ruleset":               resourceFirebaserulesRuleset(),
+			"google_logging_log_view":                    resourceLoggingLogView(),
 			"google_network_connectivity_hub":            resourceNetworkConnectivityHub(),
 			"google_network_connectivity_spoke":          resourceNetworkConnectivitySpoke(),
 			"google_org_policy_policy":                   resourceOrgPolicyPolicy(),
 			"google_os_config_os_policy_assignment":      resourceOsConfigOsPolicyAssignment(),
 			"google_privateca_certificate_template":      resourcePrivatecaCertificateTemplate(),
 			"google_recaptcha_enterprise_key":            resourceRecaptchaEnterpriseKey(),
-			"google_container_aws_cluster":               resourceContainerAwsCluster(),
-			"google_container_aws_node_pool":             resourceContainerAwsNodePool(),
-			"google_container_azure_client":              resourceContainerAzureClient(),
-			"google_container_azure_cluster":             resourceContainerAzureCluster(),
-			"google_container_azure_node_pool":           resourceContainerAzureNodePool(),
 		},
 		// ------------------------------------
 		map[string]*schema.Resource{
@@ -1394,6 +1413,7 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 	config.ComputeBasePath = d.Get("compute_custom_endpoint").(string)
 	config.ContainerAnalysisBasePath = d.Get("container_analysis_custom_endpoint").(string)
 	config.DataCatalogBasePath = d.Get("data_catalog_custom_endpoint").(string)
+	config.DataFusionBasePath = d.Get("data_fusion_custom_endpoint").(string)
 	config.DataLossPreventionBasePath = d.Get("data_loss_prevention_custom_endpoint").(string)
 	config.DataprocBasePath = d.Get("dataproc_custom_endpoint").(string)
 	config.DatastoreBasePath = d.Get("datastore_custom_endpoint").(string)
@@ -1452,9 +1472,11 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData, p *schema.Pr
 	config.BigtableAdminBasePath = d.Get(BigtableAdminCustomEndpointEntryKey).(string)
 
 	// dcl
+	config.ApikeysBasePath = d.Get(ApikeysEndpointEntryKey).(string)
 	config.AssuredWorkloadsBasePath = d.Get(AssuredWorkloadsEndpointEntryKey).(string)
 	config.CloudResourceManagerBasePath = d.Get(CloudResourceManagerEndpointEntryKey).(string)
 	config.EventarcBasePath = d.Get(EventarcEndpointEntryKey).(string)
+	config.FirebaserulesBasePath = d.Get(FirebaserulesEndpointEntryKey).(string)
 	config.GkeHubBasePath = d.Get(GkeHubFeatureCustomEndpointEntryKey).(string)
 	config.NetworkConnectivityBasePath = d.Get(NetworkConnectivityEndpointEntryKey).(string)
 	config.OrgPolicyBasePath = d.Get(OrgPolicyEndpointEntryKey).(string)

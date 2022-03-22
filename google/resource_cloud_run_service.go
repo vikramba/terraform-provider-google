@@ -128,7 +128,7 @@ include labels and annotations that should be attached to the Revision.
 To correlate a Revision, and/or to force a Revision to be created when the
 spec doesn't otherwise change, a nonce label may be provided in the
 template metadata. For more details, see:
-https://github.com/knative/serving/blob/master/docs/client-conventions.md#associate-modifications-with-revisions
+https://github.com/knative/serving/blob/main/docs/client-conventions.md#associate-modifications-with-revisions
 
 Cloud Run does not currently support referencing a build that is
 responsible for materializing the container image from source.`,
@@ -151,7 +151,7 @@ responsible for materializing the container image from source.`,
 In the context of a Revision, we disallow a number of the fields of
 this Container, including: name, ports, and volumeMounts.
 The runtime contract is documented here:
-https://github.com/knative/serving/blob/master/docs/runtime-contract.md`,
+https://github.com/knative/serving/blob/main/docs/runtime-contract.md`,
 										Elem: &schema.Resource{
 											Schema: map[string]*schema.Schema{
 												"image": {
@@ -295,19 +295,19 @@ https://cloud.google.com/run/docs/reference/rest/v1/RevisionSpec#ContainerPort`,
 														Schema: map[string]*schema.Schema{
 															"container_port": {
 																Type:        schema.TypeInt,
-																Required:    true,
-																Description: `Port number.`,
+																Optional:    true,
+																Description: `Port number the container listens on. This must be a valid port number, 0 < x < 65536.`,
 															},
 															"name": {
 																Type:        schema.TypeString,
 																Computed:    true,
 																Optional:    true,
-																Description: `Name of the port.`,
+																Description: `If specified, used to specify which protocol to use. Allowed values are "http1" and "h2c".`,
 															},
 															"protocol": {
 																Type:        schema.TypeString,
 																Optional:    true,
-																Description: `Protocol used on port. Defaults to TCP.`,
+																Description: `Protocol for port. Must be "TCP". Defaults to "TCP".`,
 															},
 														},
 													},

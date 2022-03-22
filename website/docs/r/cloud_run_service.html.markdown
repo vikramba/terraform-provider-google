@@ -519,7 +519,7 @@ The following arguments are supported:
   In the context of a Revision, we disallow a number of the fields of
   this Container, including: name, ports, and volumeMounts.
   The runtime contract is documented here:
-  https://github.com/knative/serving/blob/master/docs/runtime-contract.md
+  https://github.com/knative/serving/blob/main/docs/runtime-contract.md
   Structure is [documented below](#nested_containers).
 
 * `container_concurrency` -
@@ -737,15 +737,15 @@ The following arguments are supported:
 
 * `name` -
   (Optional)
-  Name of the port.
+  If specified, used to specify which protocol to use. Allowed values are "http1" and "h2c".
 
 * `protocol` -
   (Optional)
-  Protocol used on port. Defaults to TCP.
+  Protocol for port. Must be "TCP". Defaults to "TCP".
 
 * `container_port` -
-  (Required)
-  Port number.
+  (Optional)
+  Port number the container listens on. This must be a valid port number, 0 < x < 65536.
 
 <a name="nested_resources"></a>The `resources` block supports:
 
@@ -857,7 +857,7 @@ The following arguments are supported:
   To correlate a Revision, and/or to force a Revision to be created when the
   spec doesn't otherwise change, a nonce label may be provided in the
   template metadata. For more details, see:
-  https://github.com/knative/serving/blob/master/docs/client-conventions.md#associate-modifications-with-revisions
+  https://github.com/knative/serving/blob/main/docs/client-conventions.md#associate-modifications-with-revisions
   Cloud Run does not currently support referencing a build that is
   responsible for materializing the container image from source.
   Structure is [documented below](#nested_template).

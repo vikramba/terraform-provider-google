@@ -17,7 +17,7 @@ subcategory: "OrgPolicy"
 layout: "google"
 page_title: "Google: google_org_policy_policy"
 description: |-
-An organization policy gives you programmatic control over your organization's cloud resources.  Using Organization Policies, you will be able to configure constraints across your entire resource hierarchy.
+  An organization policy gives you programmatic control over your organization's cloud resources.  Using Organization Policies, you will be able to configure constraints across your entire resource hierarchy.
 ---
 
 # google_org_policy_policy
@@ -237,7 +237,6 @@ Policy can be imported using any of these accepted formats:
 
 ```
 $ terraform import google_org_policy_policy.default {{parent}}/policies/{{name}}
-$ terraform import google_org_policy_policy.default {{parent}}/{{name}}
 ```
 
 
